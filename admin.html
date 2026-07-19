@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" sizes="180x180" href="https://raw.githubusercontent.com/k1117n-cmyk/daily-menu/main/favicon.png?v=20260719">
+  <title>献立管理</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8f6;
+      --panel: #ffffff;
+      --text: #26302b;
+      --muted: #66716b;
+      --line: #dfe5df;
+      --primary: #256d4f;
+      --danger: #b9332f;
+      --chip: #edf4ef;
+      --shadow: 0 10px 24px rgba(33, 45, 38, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 18px;
+      line-height: 1.6;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    button, .link-button {
+      min-height: 48px;
+      border: 0;
+      border-radius: 8px;
+      padding: 12px 16px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    button.secondary, .link-button.secondary {
+      background: #e8eee9;
+      color: var(--text);
+    }
+
+    button.danger {
+      background: #f4e3e1;
+      color: var(--danger);
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: .7;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(247, 248, 246, .96);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+    }
+
+    .bar {
+      width: min(760px, 100%);
+      margin: 0 auto;
+      padding: calc(18px + env(safe-area-inset-top, 0px)) max(18px, env(safe-area-inset-right, 0px)) 18px max(18px, env(safe-area-inset-left, 0px));
+      display: grid;
+      gap: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    main {
+      width: min(760px, 100%);
+      margin: 0 auto;
+      padding: 20px max(18px, env(safe-area-inset-right, 0px)) calc(56px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+      display: grid;
+      gap: 20px;
+    }
+
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 24px;
+      letter-spacing: 0;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      min-height: 50px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      padding: 12px 14px;
+      font-size: 18px;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    input[type="file"] {
+      padding: 10px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .actions, .card-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .week-nav {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .week-nav button {
+      min-width: 0;
+    }
+
+    .status, .summary {
+      min-height: 24px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .status.error {
+      color: var(--danger);
+      font-weight: 800;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .empty {
+      padding: 24px 12px;
+      color: var(--muted);
+      text-align: center;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+    }
+
+    .meal-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: #fff;
+    }
+
+    .photo-preview,
+    .meal-photo {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #f1f4f0;
+      object-fit: cover;
+    }
+
+    .photo-preview {
+      display: none;
+      aspect-ratio: 4 / 3;
+      margin: 0 0 14px;
+    }
+
+    .meal-photo {
+      aspect-ratio: 4 / 3;
+      margin-bottom: 10px;
+      cursor: zoom-in;
+    }
+
+    .photo-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: max(18px, env(safe-area-inset-top, 0px)) max(18px, env(safe-area-inset-right, 0px)) max(18px, env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+      background: rgba(0, 0, 0, .82);
+    }
+
+    .photo-modal.is-open {
+      display: flex;
+    }
+
+    .photo-modal img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 8px;
+      background: #fff;
+      object-fit: contain;
+    }
+
+    .photo-modal-close {
+      position: fixed;
+      top: max(14px, env(safe-area-inset-top, 0px));
+      right: max(14px, env(safe-area-inset-right, 0px));
+      width: 48px;
+      min-height: 48px;
+      padding: 0;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .92);
+      color: #111;
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .meal-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .meal-date {
+      font-weight: 800;
+    }
+
+    .meal-type {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: var(--chip);
+      color: var(--primary);
+      font-size: 14px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .dish {
+      margin: 0 0 8px;
+      font-size: 22px;
+      font-weight: 800;
+      white-space: pre-wrap;
+    }
+
+    .notes {
+      margin: 0;
+      color: var(--muted);
+      white-space: pre-wrap;
+    }
+
+    .tag {
+      display: inline-flex;
+      margin: 8px 6px 0 0;
+      background: #f1f0e8;
+      border-radius: 999px;
+      color: #5b5a46;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 3px 8px;
+    }
+
+    @media (max-width: 520px) {
+      main {
+        padding-top: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <h1>献立管理</h1>
+      <a class="link-button secondary" target="_top" href="<?= appUrl ?>?page=view">閲覧画面へ</a>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2 id="formTitle">記録する</h2>
+      <form id="mealForm">
+        <input type="hidden" id="id">
+        <div class="row">
+          <label>
+            日付
+            <input type="date" id="date" required>
+          </label>
+          <label>
+            食事
+            <select id="meal" required>
+              <option value="朝食">朝食</option>
+              <option value="昼食">昼食</option>
+              <option value="夕食">夕食</option>
+              <option value="間食">間食</option>
+              <option value="その他">その他</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          献立
+          <textarea id="dish" required placeholder="例：焼き鮭、味噌汁、ごはん"></textarea>
+        </label>
+        <label>
+          メモ
+          <textarea id="notes" placeholder="買い物、好評だった点、次回の改善など"></textarea>
+        </label>
+        <label>
+          タグ
+          <input type="text" id="tags" placeholder="和食, 魚, 作り置き">
+        </label>
+        <label>
+          写真
+          <input type="file" id="photo" accept="image/*">
+        </label>
+        <img class="photo-preview" id="photoPreview" alt="">
+        <label id="removePhotoLabel" style="display: none;">
+          <span>
+            <input type="checkbox" id="removePhoto" style="width: auto; min-height: auto;">
+            現在の写真を削除
+          </span>
+        </label>
+        <div class="actions">
+          <button type="submit" id="saveButton">保存</button>
+          <button type="button" class="secondary" id="resetButton">新規入力</button>
+        </div>
+        <div class="status" id="formStatus"></div>
+      </form>
+    </section>
+
+    <section>
+      <h2>最近の記録</h2>
+      <div class="week-nav">
+        <button type="button" class="secondary" id="prevWeekButton">前週</button>
+        <button type="button" class="secondary" id="currentWeekButton">今週</button>
+        <button type="button" class="secondary" id="nextWeekButton">次週</button>
+      </div>
+      <div class="summary" id="summary"></div>
+      <div class="list" id="list"></div>
+    </section>
+  </main>
+
+  <div class="photo-modal" id="photoModal" hidden>
+    <button type="button" class="photo-modal-close" id="photoModalClose" aria-label="閉じる">&times;</button>
+    <img id="photoModalImage" alt="">
+  </div>
+
+  <script>
+    const state = { meals: [] };
+    const fields = {
+      id: document.getElementById('id'),
+      date: document.getElementById('date'),
+      meal: document.getElementById('meal'),
+      dish: document.getElementById('dish'),
+      notes: document.getElementById('notes'),
+      tags: document.getElementById('tags'),
+      photo: document.getElementById('photo'),
+      removePhoto: document.getElementById('removePhoto')
+    };
+    const form = document.getElementById('mealForm');
+    const list = document.getElementById('list');
+    const summary = document.getElementById('summary');
+    const formTitle = document.getElementById('formTitle');
+    const formStatus = document.getElementById('formStatus');
+    const saveButton = document.getElementById('saveButton');
+    const resetButton = document.getElementById('resetButton');
+    const prevWeekButton = document.getElementById('prevWeekButton');
+    const currentWeekButton = document.getElementById('currentWeekButton');
+    const nextWeekButton = document.getElementById('nextWeekButton');
+    const photoPreview = document.getElementById('photoPreview');
+    const removePhotoLabel = document.getElementById('removePhotoLabel');
+    const photoModal = document.getElementById('photoModal');
+    const photoModalImage = document.getElementById('photoModalImage');
+    const photoModalClose = document.getElementById('photoModalClose');
+
+    document.addEventListener('DOMContentLoaded', init);
+    form.addEventListener('submit', onSubmit);
+    resetButton.addEventListener('click', resetForm);
+    prevWeekButton.addEventListener('click', () => moveWeek(-1));
+    currentWeekButton.addEventListener('click', () => setWeek(new Date()));
+    nextWeekButton.addEventListener('click', () => moveWeek(1));
+    fields.photo.addEventListener('change', previewSelectedPhoto);
+    photoModal.addEventListener('click', event => {
+      if (event.target === photoModal) closePhotoModal();
+    });
+    photoModalClose.addEventListener('click', closePhotoModal);
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closePhotoModal();
+    });
+
+    function init() {
+      setBusy(true);
+      google.script.run
+        .withSuccessHandler(data => {
+          fields.date.value = data.today;
+          setWeek(parseDate(data.today), data.meals);
+        })
+        .withFailureHandler(handleError)
+        .getInitialData();
+    }
+
+    function reloadMeals() {
+      setBusy(true);
+      google.script.run
+        .withSuccessHandler(meals => {
+          state.meals = meals;
+          render();
+          setBusy(false);
+        })
+        .withFailureHandler(handleError)
+        .getMeals({
+          from: state.weekFrom,
+          to: state.weekTo
+        });
+    }
+
+    async function onSubmit(event) {
+      event.preventDefault();
+      setBusy(true);
+      setStatus('保存しています。');
+      let photoData = { dataUrl: '', name: '' };
+      try {
+        photoData = await preparePhoto();
+      } catch (error) {
+        handleError(error);
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(() => {
+          resetForm();
+          reloadMeals();
+          setStatus('保存しました。');
+        })
+        .withFailureHandler(handleError)
+        .saveMeal({
+          id: fields.id.value,
+          date: fields.date.value,
+          meal: fields.meal.value,
+          dish: fields.dish.value,
+          notes: fields.notes.value,
+          tags: fields.tags.value,
+          photoDataUrl: photoData.dataUrl,
+          photoName: photoData.name,
+          removePhoto: fields.removePhoto.checked
+        });
+    }
+
+    function editMeal(id) {
+      const meal = state.meals.find(item => item.id === id);
+      if (!meal) return;
+      fields.id.value = meal.id;
+      fields.date.value = meal.date;
+      fields.meal.value = meal.meal;
+      fields.dish.value = meal.dish;
+      fields.notes.value = meal.notes;
+      fields.tags.value = meal.tags;
+      fields.removePhoto.checked = false;
+      removePhotoLabel.style.display = meal.photoUrl ? 'grid' : 'none';
+      showPreview(meal.photoUrl);
+      formTitle.textContent = '編集する';
+      saveButton.textContent = '更新';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function removeMeal(id) {
+      if (!confirm('この記録を削除しますか？')) return;
+      setBusy(true);
+      google.script.run
+        .withSuccessHandler(reloadMeals)
+        .withFailureHandler(handleError)
+        .deleteMeal(id);
+    }
+
+    function resetForm() {
+      const currentDate = fields.date.value;
+      form.reset();
+      fields.id.value = '';
+      fields.date.value = currentDate || new Date().toISOString().slice(0, 10);
+      fields.meal.value = '朝食';
+      fields.removePhoto.checked = false;
+      fields.photo.value = '';
+      removePhotoLabel.style.display = 'none';
+      showPreview('');
+      formTitle.textContent = '記録する';
+      saveButton.textContent = '保存';
+    }
+
+    function render() {
+      summary.textContent = `${formatDate(state.weekFrom)} - ${formatDate(state.weekTo)}・${state.meals.length}件の記録`;
+      list.innerHTML = '';
+      if (!state.meals.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = '記録はまだありません。';
+        list.appendChild(empty);
+        return;
+      }
+
+      sortMealsNewestFirst(state.meals).forEach(meal => {
+        const card = document.createElement('article');
+        card.className = 'meal-card';
+        const tags = meal.tags
+          ? meal.tags.split(',').map(tag => tag.trim()).filter(Boolean).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')
+          : '';
+        card.innerHTML = `
+          ${meal.photoUrl ? `<img class="meal-photo" src="${escapeAttribute(meal.photoUrl)}" alt="" tabindex="0" role="button" aria-label="写真を拡大">` : ''}
+          <div class="meal-head">
+            <div class="meal-date">${formatDate(meal.date)}</div>
+            <div class="meal-type">${escapeHtml(meal.meal)}</div>
+          </div>
+          <p class="dish">${escapeHtml(meal.dish)}</p>
+          ${meal.notes ? `<p class="notes">${escapeHtml(meal.notes)}</p>` : ''}
+          ${tags}
+          <div class="card-actions">
+            <button type="button" class="secondary" data-action="edit" data-id="${meal.id}">編集</button>
+            <button type="button" class="danger" data-action="delete" data-id="${meal.id}">削除</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+
+      list.querySelectorAll('button[data-action]').forEach(button => {
+        button.addEventListener('click', () => {
+          if (button.dataset.action === 'edit') editMeal(button.dataset.id);
+          if (button.dataset.action === 'delete') removeMeal(button.dataset.id);
+        });
+      });
+
+      list.querySelectorAll('.meal-photo').forEach(photo => {
+        photo.addEventListener('click', () => openPhotoModal(photo.src));
+        photo.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openPhotoModal(photo.src);
+          }
+        });
+      });
+    }
+
+    function setBusy(isBusy) {
+      saveButton.disabled = isBusy;
+      prevWeekButton.disabled = isBusy;
+      currentWeekButton.disabled = isBusy;
+      nextWeekButton.disabled = isBusy;
+    }
+
+    function setStatus(message, isError) {
+      formStatus.textContent = message || '';
+      formStatus.classList.toggle('error', Boolean(isError));
+    }
+
+    function handleError(error) {
+      setBusy(false);
+      setStatus(error.message || '処理に失敗しました。', true);
+    }
+
+    function formatDate(value) {
+      const parts = value.split('-');
+      return `${parts[0]}/${parts[1]}/${parts[2]}`;
+    }
+
+    function setWeek(date, meals) {
+      const start = getWeekStart(date);
+      const end = addDays(start, 6);
+      state.weekFrom = formatInputDate(start);
+      state.weekTo = formatInputDate(end);
+      if (Array.isArray(meals)) {
+        state.meals = meals;
+        render();
+        setBusy(false);
+        return;
+      }
+      reloadMeals();
+    }
+
+    function moveWeek(offset) {
+      const base = state.weekFrom ? parseDate(state.weekFrom) : new Date();
+      setWeek(addDays(base, offset * 7));
+    }
+
+    function getWeekStart(date) {
+      const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const day = start.getDay();
+      start.setDate(start.getDate() - ((day + 6) % 7));
+      return start;
+    }
+
+    function addDays(date, days) {
+      const result = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      result.setDate(result.getDate() + days);
+      return result;
+    }
+
+    function parseDate(value) {
+      const parts = value.split('-').map(Number);
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+
+    function formatInputDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function sortMealsNewestFirst(meals) {
+      return meals.slice().sort((a, b) => {
+        if (a.date === b.date) return mealOrder(b.meal) - mealOrder(a.meal);
+        return a.date < b.date ? 1 : -1;
+      });
+    }
+
+    function mealOrder(meal) {
+      const order = {
+        '朝': 0,
+        '朝食': 0,
+        '昼': 1,
+        '昼食': 1,
+        '夜': 2,
+        '夕食': 2,
+        '晩': 2,
+        '晩ごはん': 2,
+        '間食': 3,
+        'その他': 4
+      };
+      return Object.prototype.hasOwnProperty.call(order, meal) ? order[meal] : 99;
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttribute(value) {
+      return escapeHtml(value).replace(/`/g, '&#096;');
+    }
+
+    function openPhotoModal(src) {
+      photoModalImage.src = src;
+      photoModal.hidden = false;
+      photoModal.classList.add('is-open');
+      photoModalClose.focus();
+    }
+
+    function closePhotoModal() {
+      if (photoModal.hidden) return;
+      photoModal.classList.remove('is-open');
+      photoModal.hidden = true;
+      photoModalImage.src = '';
+    }
+
+    function previewSelectedPhoto() {
+      const file = fields.photo.files[0];
+      if (!file) {
+        showPreview('');
+        return;
+      }
+      if (file.size > 20 * 1024 * 1024) {
+        setStatus('写真が大きいため、読み込みに時間がかかる場合があります。', false);
+      }
+      const reader = new FileReader();
+      reader.onload = event => showPreview(event.target.result);
+      reader.readAsDataURL(file);
+      fields.removePhoto.checked = false;
+    }
+
+    function showPreview(src) {
+      photoPreview.src = src || '';
+      photoPreview.style.display = src ? 'block' : 'none';
+    }
+
+    function preparePhoto() {
+      const file = fields.photo.files[0];
+      if (!file) return Promise.resolve({ dataUrl: '', name: '' });
+      setStatus('写真を縮小しています。');
+      return resizeImage(file).then(dataUrl => ({ dataUrl, name: file.name || 'meal-photo.jpg' }));
+    }
+
+    function resizeImage(file) {
+      return new Promise((resolve, reject) => {
+        if (!file.type || !file.type.match(/^image\//)) {
+          reject(new Error('写真ファイルを選択してください。'));
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('写真を読み込めませんでした。'));
+        reader.onload = event => {
+          const image = new Image();
+          image.onerror = () => reject(new Error('写真を読み込めませんでした。'));
+          image.onload = () => {
+            const maxSize = 1000;
+            const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(image.width * scale);
+            canvas.height = Math.round(image.height * scale);
+            const context = canvas.getContext('2d');
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.7));
+          };
+          image.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  </script>
+</body>
+</html>

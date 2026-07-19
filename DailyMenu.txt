@@ -1,0 +1,9 @@
+毎日の献立
+
+バージョン 1（2026/07/19 13:05）
+デプロイ ID
+AKfycbx6zyP30smE99ZrkCsO5AQBdNl8ayyzmQqXJRJjImbWkOnCQJ4-khj_amdq5NXHgUMD
+
+ウェブアプリ
+URL
+https://script.google.com/macros/s/AKfycbx6zyP30smE99ZrkCsO5AQBdNl8ayyzmQqXJRJjImbWkOnCQJ4-khj_amdq5NXHgUMD/exec

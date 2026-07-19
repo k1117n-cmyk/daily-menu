@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" sizes="180x180" href="https://raw.githubusercontent.com/k1117n-cmyk/daily-menu/main/favicon.png?v=20260719">
+  <title>献立を見る</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8f6;
+      --panel: #ffffff;
+      --text: #26302b;
+      --muted: #66716b;
+      --line: #dfe5df;
+      --primary: #256d4f;
+      --chip: #edf4ef;
+      --shadow: 0 10px 24px rgba(33, 45, 38, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 30px;
+      line-height: 1.7;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    button, input, select { font: inherit; }
+
+    button, .link-button {
+      min-height: 84px;
+      border: 0;
+      border-radius: 8px;
+      padding: 20px 22px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    button.secondary, .link-button.secondary {
+      background: #e8eee9;
+      color: var(--text);
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: .7;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(247, 248, 246, .96);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(10px);
+    }
+
+    .bar {
+      width: min(760px, 100%);
+      margin: 0 auto;
+      padding: calc(18px + env(safe-area-inset-top, 0px)) max(18px, env(safe-area-inset-right, 0px)) 18px max(18px, env(safe-area-inset-left, 0px));
+      display: grid;
+      gap: 10px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 48px;
+      letter-spacing: 0;
+    }
+
+    main {
+      width: min(760px, 100%);
+      margin: 0 auto;
+      padding: 20px max(18px, env(safe-area-inset-right, 0px)) calc(56px + env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+      display: grid;
+      gap: 20px;
+    }
+
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 40px;
+      letter-spacing: 0;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 18px;
+      color: var(--muted);
+      font-size: 30px;
+      font-weight: 800;
+    }
+
+    input, select {
+      width: 100%;
+      min-height: 90px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      padding: 20px;
+      font-size: 34px;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .full {
+      grid-column: auto;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .week-nav {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .week-nav button {
+      min-width: 0;
+      min-height: 72px;
+      padding: 12px 8px;
+      font-size: 28px;
+    }
+
+    .summary {
+      color: var(--muted);
+      font-size: 28px;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .empty {
+      padding: 24px 12px;
+      color: var(--muted);
+      text-align: center;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+    }
+
+    .meal-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: #fff;
+    }
+
+    .meal-photo {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #f1f4f0;
+      object-fit: cover;
+      cursor: zoom-in;
+    }
+
+    .photo-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: max(18px, env(safe-area-inset-top, 0px)) max(18px, env(safe-area-inset-right, 0px)) max(18px, env(safe-area-inset-bottom, 0px)) max(18px, env(safe-area-inset-left, 0px));
+      background: rgba(0, 0, 0, .82);
+    }
+
+    .photo-modal.is-open {
+      display: flex;
+    }
+
+    .photo-modal img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 8px;
+      background: #fff;
+      object-fit: contain;
+    }
+
+    .photo-modal-close {
+      position: fixed;
+      top: max(14px, env(safe-area-inset-top, 0px));
+      right: max(14px, env(safe-area-inset-right, 0px));
+      width: 60px;
+      min-height: 60px;
+      padding: 0;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .92);
+      color: #111;
+      font-size: 38px;
+      line-height: 1;
+    }
+
+    .meal-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .meal-date {
+      font-weight: 800;
+    }
+
+    .meal-type {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: var(--chip);
+      color: var(--primary);
+      font-size: 26px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .dish {
+      margin: 0 0 8px;
+      font-size: 44px;
+      font-weight: 800;
+      white-space: pre-wrap;
+    }
+
+    .notes {
+      margin: 0;
+      color: var(--muted);
+      white-space: pre-wrap;
+    }
+
+    .tag {
+      display: inline-flex;
+      margin: 8px 6px 0 0;
+      background: #f1f0e8;
+      border-radius: 999px;
+      color: #5b5a46;
+      font-size: 24px;
+      font-weight: 800;
+      padding: 3px 8px;
+    }
+
+    @media (max-width: 520px) {
+      main {
+        padding-top: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="bar">
+      <h1>献立を見る</h1>
+      <a class="link-button secondary" target="_top" href="<?= appUrl ?>?page=admin">管理画面へ</a>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>検索</h2>
+      <div class="filters">
+        <label>
+          開始日
+          <input type="date" id="from">
+        </label>
+        <label>
+          終了日
+          <input type="date" id="to">
+        </label>
+        <label>
+          食事
+          <select id="meal">
+            <option value="">すべて</option>
+            <option value="朝食">朝食</option>
+            <option value="昼食">昼食</option>
+            <option value="夕食">夕食</option>
+            <option value="間食">間食</option>
+            <option value="その他">その他</option>
+          </select>
+        </label>
+        <label class="full">
+          検索
+          <input type="search" id="search" placeholder="料理名、メモ、タグ">
+        </label>
+      </div>
+      <div class="actions">
+        <button type="button" id="reloadButton">更新</button>
+      </div>
+      <div class="week-nav">
+        <button type="button" class="secondary" id="prevWeekButton">前週</button>
+        <button type="button" class="secondary" id="currentWeekButton">今週</button>
+        <button type="button" class="secondary" id="nextWeekButton">次週</button>
+      </div>
+    </section>
+
+    <section>
+      <h2>記録一覧</h2>
+      <div class="summary" id="summary"></div>
+      <div class="list" id="list"></div>
+    </section>
+  </main>
+
+  <div class="photo-modal" id="photoModal" hidden>
+    <button type="button" class="photo-modal-close" id="photoModalClose" aria-label="閉じる">&times;</button>
+    <img id="photoModalImage" alt="">
+  </div>
+
+  <script>
+    const state = { meals: [] };
+    const fields = {
+      from: document.getElementById('from'),
+      to: document.getElementById('to'),
+      meal: document.getElementById('meal'),
+      search: document.getElementById('search')
+    };
+    const list = document.getElementById('list');
+    const summary = document.getElementById('summary');
+    const reloadButton = document.getElementById('reloadButton');
+    const prevWeekButton = document.getElementById('prevWeekButton');
+    const currentWeekButton = document.getElementById('currentWeekButton');
+    const nextWeekButton = document.getElementById('nextWeekButton');
+    const photoModal = document.getElementById('photoModal');
+    const photoModalImage = document.getElementById('photoModalImage');
+    const photoModalClose = document.getElementById('photoModalClose');
+
+    document.addEventListener('DOMContentLoaded', init);
+    reloadButton.addEventListener('click', loadMeals);
+    prevWeekButton.addEventListener('click', () => moveWeek(-1));
+    currentWeekButton.addEventListener('click', () => setWeek(new Date()));
+    nextWeekButton.addEventListener('click', () => moveWeek(1));
+    [fields.from, fields.to, fields.meal].forEach(field => field.addEventListener('change', loadMeals));
+    fields.search.addEventListener('input', debounce(loadMeals, 250));
+    photoModal.addEventListener('click', event => {
+      if (event.target === photoModal) closePhotoModal();
+    });
+    photoModalClose.addEventListener('click', closePhotoModal);
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closePhotoModal();
+    });
+
+    function init() {
+      setBusy(true);
+      google.script.run
+        .withSuccessHandler(data => {
+          setWeek(parseDate(data.today), data.meals);
+        })
+        .withFailureHandler(handleError)
+        .getInitialData();
+    }
+
+    function loadMeals() {
+      setBusy(true);
+      google.script.run
+        .withSuccessHandler(meals => {
+          state.meals = meals;
+          render();
+          setBusy(false);
+        })
+        .withFailureHandler(handleError)
+        .getMeals({
+          from: fields.from.value,
+          to: fields.to.value,
+          meal: fields.meal.value,
+          search: fields.search.value
+        });
+    }
+
+    function render() {
+      summary.textContent = `${formatDate(fields.from.value)} - ${formatDate(fields.to.value)}・${state.meals.length}件の記録`;
+      list.innerHTML = '';
+      if (!state.meals.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = '該当する献立記録はありません。';
+        list.appendChild(empty);
+        return;
+      }
+
+      sortMealsNewestFirst(state.meals).forEach(meal => {
+        const card = document.createElement('article');
+        card.className = 'meal-card';
+        const tags = meal.tags
+          ? meal.tags.split(',').map(tag => tag.trim()).filter(Boolean).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')
+          : '';
+        card.innerHTML = `
+          ${meal.photoUrl ? `<img class="meal-photo" src="${escapeAttribute(meal.photoUrl)}" alt="" tabindex="0" role="button" aria-label="写真を拡大">` : ''}
+          <div class="meal-head">
+            <div class="meal-date">${formatDate(meal.date)}</div>
+            <div class="meal-type">${escapeHtml(meal.meal)}</div>
+          </div>
+          <p class="dish">${escapeHtml(meal.dish)}</p>
+          ${meal.notes ? `<p class="notes">${escapeHtml(meal.notes)}</p>` : ''}
+          ${tags}
+        `;
+        list.appendChild(card);
+      });
+
+      list.querySelectorAll('.meal-photo').forEach(photo => {
+        photo.addEventListener('click', () => openPhotoModal(photo.src));
+        photo.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openPhotoModal(photo.src);
+          }
+        });
+      });
+    }
+
+    function setBusy(isBusy) {
+      reloadButton.disabled = isBusy;
+      prevWeekButton.disabled = isBusy;
+      currentWeekButton.disabled = isBusy;
+      nextWeekButton.disabled = isBusy;
+    }
+
+    function handleError(error) {
+      setBusy(false);
+      summary.textContent = error.message || '処理に失敗しました。';
+    }
+
+    function formatDate(value) {
+      const parts = value.split('-');
+      return `${parts[0]}/${parts[1]}/${parts[2]}`;
+    }
+
+    function setWeek(date, meals) {
+      const start = getWeekStart(date);
+      const end = addDays(start, 6);
+      fields.from.value = formatInputDate(start);
+      fields.to.value = formatInputDate(end);
+      if (Array.isArray(meals)) {
+        state.meals = meals;
+        render();
+        setBusy(false);
+        return;
+      }
+      loadMeals();
+    }
+
+    function moveWeek(offset) {
+      const base = fields.from.value ? parseDate(fields.from.value) : new Date();
+      setWeek(addDays(base, offset * 7));
+    }
+
+    function getWeekStart(date) {
+      const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const day = start.getDay();
+      start.setDate(start.getDate() - ((day + 6) % 7));
+      return start;
+    }
+
+    function addDays(date, days) {
+      const result = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      result.setDate(result.getDate() + days);
+      return result;
+    }
+
+    function parseDate(value) {
+      const parts = value.split('-').map(Number);
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+
+    function formatInputDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function sortMealsNewestFirst(meals) {
+      return meals.slice().sort((a, b) => {
+        if (a.date === b.date) return mealOrder(b.meal) - mealOrder(a.meal);
+        return a.date < b.date ? 1 : -1;
+      });
+    }
+
+    function mealOrder(meal) {
+      const order = {
+        '朝': 0,
+        '朝食': 0,
+        '昼': 1,
+        '昼食': 1,
+        '夜': 2,
+        '夕食': 2,
+        '晩': 2,
+        '晩ごはん': 2,
+        '間食': 3,
+        'その他': 4
+      };
+      return Object.prototype.hasOwnProperty.call(order, meal) ? order[meal] : 99;
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttribute(value) {
+      return escapeHtml(value).replace(/`/g, '&#096;');
+    }
+
+    function openPhotoModal(src) {
+      photoModalImage.src = src;
+      photoModal.hidden = false;
+      photoModal.classList.add('is-open');
+      photoModalClose.focus();
+    }
+
+    function closePhotoModal() {
+      if (photoModal.hidden) return;
+      photoModal.classList.remove('is-open');
+      photoModal.hidden = true;
+      photoModalImage.src = '';
+    }
+
+    function debounce(callback, wait) {
+      let timer;
+      return function debounced() {
+        clearTimeout(timer);
+        timer = setTimeout(callback, wait);
+      };
+    }
+  </script>
+</body>
+</html>
