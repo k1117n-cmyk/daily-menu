@@ -1,5 +1,6 @@
 const SHEET_NAME = 'Meals';
 const PHOTO_FOLDER_NAME = 'Meal Photos';
+const FAVICON_URL = 'https://raw.githubusercontent.com/k1117n-cmyk/daily-menu/main/favicon.png';
 const HEADERS = ['id', 'date', 'meal', 'dish', 'notes', 'tags', 'createdAt', 'updatedAt', 'photoFileId', 'photoUrl'];
 
 function doGet(e) {
@@ -13,6 +14,7 @@ function doGet(e) {
   return template
     .evaluate()
     .setTitle(title)
+    .setFaviconUrl(FAVICON_URL)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
